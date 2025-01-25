@@ -107,6 +107,160 @@ class WordPieceTokenizer:
             print("best_candidate", merged_token)
 
         return self.vocab
+# Jai Mata Di
+import numpy as np
+import pandas as pd
+
+class WordPieceTokenizer:
+    def __init__(self, vocab_size, corpus_file_ka_path, vocab_file_path):
+        self.vocab_size = vocab_size
+        self.corpus_file_ka_path = corpus_file_ka_path
+        self.vocab_file_path = vocab_file_path
+        self.vocab = {}
+        self.liness = []
+        self.corpus = {}
+
+    def read_karo_corpus(self):
+        with open(self.corpus_file_ka_path) as f:
+            for line in f:
+                self.liness.append(line.strip())
+        return self.liness
+
+    def preprocess_data(self):
+        # Process each line in corpus
+        for line in self.liness:
+            # Convert to lowercase and remove extra whitespace
+            line = line.lower().strip()
+            # Remove punctuation and special characters, keeping only letters and spaces
+            line = ''.join(char for char in line if char.isalnum() or char.isspace())
+            # Split into words
+            words = line.split()
+            # Count word frequencies
+            for word in words:
+                if word in self.corpus:
+                    self.corpus[word] += 1
+                else:
+                    self.corpus[word] = 1
+
+    def write_vocabulary(self, group_no):
+        """Writes the vocabulary to a file."""
+        with open(f"vocabulary_{group_no}.txt", "w") as f:
+            for token in sorted(self.vocab.keys()):
+                f.write(token + "\n")
+
+
+    def construct_vocabulary(self):
+        # Initialize subword frequencies
+        subword_freq = {}
+        for word, freq in self.corpus.items():
+            for i in range(len(word)):
+                if i == 0:
+                    subword = word[i]
+                else:
+                    subword = "##" + word[i]
+
+                if subword in subword_freq:
+                    subword_freq[subword] += freq
+                else:
+                    subword_freq[subword] = freq
+
+        for char, freq in subword_freq.items():
+            if len(char) == 1 or char.startswith("##"):
+                self.vocab[char] = freq
+            else:
+                print("maro merko")
+                print(char+":"+ freq)
+
+        while len(self.vocab) < self.vocab_size:
+            # Merge the most frequent subwords to form new tokens
+            candidates = {}
+            for word, freq in self.corpus.items():
+                subwords = []
+                i = 0
+                while i < len(word):
+                    for j in range(len(word), i, -1):
+                        candidate = word[i:j]
+                        if i > 0:
+                            candidate = "##" + candidate
+                        if candidate in self.vocab:
+                            subwords.append(candidate)
+                            i = j - 1
+                            break
+                    i += 1
+
+                for k in range(len(subwords) - 1):
+                    pair = (subwords[k], subwords[k + 1])
+                    if pair in candidates:
+                        candidates[pair] += freq
+                    else:
+                        candidates[pair] = freq
+
+            # Calculate pair scores and choose the best candidate
+            pair_scores = {}
+            for pair, freq in candidates.items():
+                first, second = pair
+                score = freq / (self.vocab.get(first, 1) * self.vocab.get(second, 1))
+                pair_scores[pair] = score
+
+            best_candidate = max(pair_scores, key=pair_scores.get, default=None)
+            print("best_candidate", best_candidate)
+
+            if best_candidate is None:
+                print("maro merko 2")
+                break
+
+            # Add the new merged token to the vocabulary
+            merged_token = best_candidate[0] + best_candidate[1][2:]  # Merge without "##" in the second subword
+            self.vocab[merged_token] = candidates[best_candidate]
+
+            # Update the corpus with the merged token
+            new_corpus = {}
+            for word, freq in self.corpus.items():
+                new_word = word.replace(best_candidate[0] + best_candidate[1][2:], merged_token)
+                new_corpus[new_word] = freq
+            self.corpus = new_corpus
+
+            print("best_candidate", merged_token)
+        
+        self.write_vocabulary(5)
+
+        return self.vocab
+
+
+    def load_vocab(self):
+        with open(self.vocab_file_path, 'r') as f:
+            for line in f:
+                token = line.strip()
+                self.vocab[token] = 1  # We set frequency to 1 initially as we are only loading the vocabulary
+
+    def tokenize(self, sentence):
+        # Tokenize the given sentence based on the vocabulary
+        sentence = sentence.lower().strip()
+        # Remove punctuation and special characters, keeping only letters and spaces
+        sentence = ''.join(char for char in sentence if char.isalnum() or char.isspace())
+        
+        tokens = []
+        i = 0
+        while i < len(sentence):
+            max_len = 0
+            best_token = None
+            # Try to match the longest token starting from the current position
+            for j in range(i + 1, len(sentence) + 1):
+                subword = sentence[i:j]
+                if subword in self.vocab:
+                    if len(subword) > max_len:
+                        max_len = len(subword)
+                        best_token = subword
+            if best_token:
+                tokens.append(best_token)
+                i += max_len
+            else:
+                # If no token is found, move by one character
+                tokens.append(sentence[i])
+                i += 1
+        return tokens
+
+
 
 def test():
     a = WordPieceTokenizer(1000, 'Assignment1\corpus.txt')
@@ -115,3 +269,9 @@ def test():
     print(a.construct_vocabulary())
 
 test()
+def test2():
+    a = WordPieceTokenizer(1000, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
+    a.load_vocab()  # Load vocabulary from file
+    print(a.tokenize("This is an example sentence for tokenization!"))
+
+test2()

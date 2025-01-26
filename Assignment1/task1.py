@@ -1,116 +1,10 @@
-# # Jai Mata Di
-# import numpy as np
-# import pandas as pd
-
-# class WordPieceTokenizer:
-#     def __init__(self, vocab_size, corpus_file_ka_path):
-#         self.vocab_size = vocab_size
-#         self.corpus_file_ka_path = corpus_file_ka_path
-#         self.vocab = {}
-#         self.liness = []
-#         self.corpus = {}
-
-#     def read_karo_corpus(self):
-#         with open(self.corpus_file_ka_path) as f:
-#             for line in f:
-#                 self.liness.append(line.strip())
-#         return self.liness
-
-#     def preprocess_data(self):
-#         # Process each line in corpus
-#         for line in self.liness:
-#             # Convert to lowercase and remove extra whitespace
-#             line = line.lower().strip()
-#             # Remove punctuation and special characters, keeping only letters and spaces
-#             line = ''.join(char for char in line if char.isalnum() or char.isspace())
-#             # Split into words
-#             words = line.split()
-#             # Count word frequencies
-#             for word in words:
-#                 if word in self.corpus:
-#                     self.corpus[word] += 1
-#                 else:
-#                     self.corpus[word] = 1
-
-#     def construct_vocabulary(self):
-#         # Initialize subword frequencies
-#         subword_freq = {}
-#         for word, freq in self.corpus.items():
-#             for i in range(len(word)):
-#                 if i == 0:
-#                     subword = word[i]
-#                 else:
-#                     subword = "##" + word[i]
-
-#                 if subword in subword_freq:
-#                     subword_freq[subword] += freq
-#                 else:
-#                     subword_freq[subword] = freq
-
-#         for char, freq in subword_freq.items():
-#             if len(char) == 1 or char.startswith("##"):
-#                 self.vocab[char] = freq
-#             else:
-#                 print("maro merko")
-#                 print(char+":"+ freq)
-
-#         while len(self.vocab) < self.vocab_size:
-#             # Merge the most frequent subwords to form new tokens
-#             # print(len(self.vocab))
-#             candidates = {}
-#             for word, freq in self.corpus.items():
-#                 subwords = []
-#                 i = 0
-#                 while i < len(word):
-#                     for j in range(len(word), i, -1):
-#                         candidate = word[i:j]
-#                         if i > 0:
-#                             candidate = "##" + candidate
-#                         if candidate in self.vocab:
-#                             subwords.append(candidate)
-#                             i = j - 1
-#                             break
-#                     i += 1
-
-#                 for k in range(len(subwords) - 1):
-#                     pair = (subwords[k], subwords[k + 1])
-#                     if pair in candidates:
-#                         candidates[pair] += freq
-#                     else:
-#                         candidates[pair] = freq
-
-#             # Calculate pair scores and choose the best candidate
-#             pair_scores = {}
-#             for pair, freq in candidates.items():
-#                 first, second = pair
-#                 score = freq / (self.vocab.get(first, 1) * self.vocab.get(second, 1))
-#                 pair_scores[pair] = score
-
-#             best_candidate = max(pair_scores, key=pair_scores.get, default=None)
-#             print("best_candidate", best_candidate)
-
-#             if best_candidate is None:
-#                 print("maro merko 2")
-#                 break
-
-#             # Add the new merged token to the vocabulary
-#             merged_token = best_candidate[0] + best_candidate[1][2:]  # Merge without "##" in the second subword
-#             self.vocab[merged_token] = candidates[best_candidate]
-
-#             # Update the corpus with the merged token
-#             new_corpus = {}
-#             for word, freq in self.corpus.items():
-#                 new_word = word.replace(best_candidate[0] + best_candidate[1][2:], merged_token)
-#                 new_corpus[new_word] = freq
-#             self.corpus = new_corpus
-
-#             print("best_candidate", merged_token)
-
-#         return self.vocab
 # Jai Mata Di
 import numpy as np
 import pandas as pd
-
+from collections import Counter
+import os
+from collections import defaultdict
+import time
 class WordPieceTokenizer:
     def __init__(self, vocab_size, corpus_file_ka_path, vocab_file_path = None):
         self.vocab_size = vocab_size
@@ -118,7 +12,7 @@ class WordPieceTokenizer:
         self.vocab_file_path = vocab_file_path
         self.vocab = {}
         self.liness = []
-        self.corpus = {}
+        self.corpus = defaultdict(int)
 
     def read_karo_corpus(self):
         with open(self.corpus_file_ka_path) as f:
@@ -133,100 +27,100 @@ class WordPieceTokenizer:
             line = line.lower().strip()
             # Remove punctuation and special characters, keeping only letters and spaces
             line = ''.join(char for char in line if char.isalnum() or char.isspace())
-            # Split into words
+            
             words = line.split()
-            # Count word frequencies
             for word in words:
-                if word in self.corpus:
-                    self.corpus[word] += 1
-                else:
-                    self.corpus[word] = 1
-
+                self.corpus[word] += 1
+    def get_score(self,pair,val):
+        # 1 lagaya for non zero division 
+        first, second = pair
+        score = val/(self.vocab.get(first, 1) * self.vocab.get(second, 1))
+        return score
     def write_vocabulary(self, group_no):
-        """Writes the vocabulary to a file."""
         with open(f"vocabulary_{group_no}.txt", "w") as f:
             for token in sorted(self.vocab.keys()):
                 f.write(token + "\n")
 
+    def update_corpus_spl(self,abhi_tk_best):
+        new = defaultdict(int)
+        # print(self.corpus)
+        # time.sleep(5)
+        for i,j in self.corpus.items():
+            if type(i) == tuple: 
+                continue
+            np_i = i.replace(abhi_tk_best[0]+abhi_tk_best[1][2::],abhi_tk_best[0]+abhi_tk_best[1][2::])
+            new[np_i] = j
+        # print(new)
+        return new
+
 
     def construct_vocabulary(self):
         # Initialize subword frequencies
-        subword_freq = {}
-        for word, freq in self.corpus.items():
-            for i in range(len(word)):
-                if i == 0:
-                    subword = word[i]
+        ans_tmp = defaultdict(int)
+        for i,j in self.corpus.items():
+            # print(i,j)
+            if type(i) == tuple:
+                continue
+            for k in range(len(i)):
+                if k == 0:
+                    ans_tmp[i[k]] += j
                 else:
-                    subword = "##" + word[i]
-
-                if subword in subword_freq:
-                    subword_freq[subword] += freq
-                else:
-                    subword_freq[subword] = freq
-
-        for char, freq in subword_freq.items():
-            if len(char) == 1 or char.startswith("##"):
-                self.vocab[char] = freq
-            else:
-                print("maro merko")
-                print(char+":"+ freq)
-
+                    ans_tmp["##" + i[k]] += j
+        for i,j in ans_tmp.items():
+            # if len(i) == 3:
+            #     print(i)
+            #     exit(0)
+            # print(i,j)
+            # tmp print check ke liye 
+            self.vocab[i] = j
+        # print(self.vocab)
         while len(self.vocab) < self.vocab_size:
-            print(len(self.vocab))
-            # Merge the most frequent subwords to form new tokens
-            candidates = {}
-            for word, freq in self.corpus.items():
-                subwords = []
-                i = 0
-                while i < len(word):
-                    for j in range(len(word), i, -1):
-                        candidate = word[i:j]
-                        if i > 0:
-                            candidate = "##" + candidate
-                        if candidate in self.vocab:
-                            subwords.append(candidate)
-                            i = j - 1
+            # print(len(self.vocab)) # len same aa rhi issue hai
+            # hr baar ek new token add krna hai 
+            tmp = defaultdict(int)
+            for i,j in self.corpus.items():
+                # print(type(i))
+                out_words =[]
+                start_old = 0
+                while start_old < len(i):
+                    for new_tmp in range(len(i),start_old,-1):
+                        # print(i[start_old:new_tmp])
+                        tmp2 = i[start_old:new_tmp]
+                        # original initializa krke rkha hai 
+                        if start_old != 0:
+                            tmp2 = "##"+i[start_old:new_tmp]
+                        if tmp2 in self.vocab:
+                            out_words.append(tmp2)
+                            start_old = new_tmp-1
                             break
-                    i += 1
-
-                for k in range(len(subwords) - 1):
-                    pair = (subwords[k], subwords[k + 1])
-                    if pair in candidates:
-                        candidates[pair] += freq
-                    else:
-                        candidates[pair] = freq
-
-            # Calculate pair scores and choose the best candidate
-            pair_scores = {}
-            for pair, freq in candidates.items():
-                first, second = pair
-                score = freq / (self.vocab.get(first, 1) * self.vocab.get(second, 1))
-                pair_scores[pair] = score
-
-            best_candidate = max(pair_scores, key=pair_scores.get, default=None)
-            print("best_candidate", best_candidate)
-
-            if best_candidate is None:
-                print("maro merko 2")
+                    start_old += 1  
+                for k in range(len(out_words)-1):
+                    tmp[(out_words[k],out_words[k+1])] += j
+                # if 
+            # print(tmp)
+            final_dp = {} # to hold the aakhri score on which  comparisons krenge 
+            for utk,arp in tmp.items():
+                score = self.get_score(utk,arp)
+                # print(score)
+                final_dp[utk] = score
+            for i,j in self.corpus.items():
+                if type(i) == tuple:
+                    continue
+            abhi_tk_best = max(final_dp,key = lambda x:final_dp[x],default = None)
+            # print(abhi_tk_best,"KLKLL")
+            if abhi_tk_best is None:
+                # not possible iska mtlb corpus se bda vocab size manga hai 
                 break
+            if "##" not in abhi_tk_best[1]:
+                abhi_tk_best[1] = "##" + abhi_tk_best[1]
+            self.vocab[abhi_tk_best[0]+abhi_tk_best[1][2::]] = tmp[abhi_tk_best]
 
-            # Add the new merged token to the vocabulary
-            merged_token = best_candidate[0] + best_candidate[1][2:]  # Merge without "##" in the second subword
-            self.vocab[merged_token] = candidates[best_candidate]
-
-            # Update the corpus with the merged token
-            new_corpus = {}
-            for word, freq in self.corpus.items():
-                new_word = word.replace(best_candidate[0] + best_candidate[1][2:], merged_token)
-                new_corpus[new_word] = freq
-            self.corpus = new_corpus
-
-            print("best_candidate", merged_token)
-        
+            # ab corpus ko update krna hai
+            qp = self.update_corpus_spl(abhi_tk_best)
+            # print(qp)
+            self.corpus = qp.copy()
         self.write_vocabulary(5)
-
         return self.vocab
-
 
     def load_vocab(self):
         with open(self.vocab_file_path, 'r') as f:
@@ -234,45 +128,63 @@ class WordPieceTokenizer:
                 token = line.strip()
                 self.vocab[token] = 1  # We set frequency to 1 initially as we are only loading the vocabulary
 
-    def tokenize(self, sentence):
-        # Tokenize the given sentence based on the vocabulary
-        sentence = sentence.lower().strip()
-        # Remove punctuation and special characters, keeping only letters and spaces
-        sentence = ''.join(char for char in sentence if char.isalnum() or char.isspace())
-        
-        tokens = []
+    def tokenize(self,s):
+        # test krne ke liye 
+        s = s.lower().strip()
+        s = ''.join(char for char in s if char.isalnum() or char.isspace()) # Assumption thi vocab me sirf letters,digits,spaces honge
+        ans_dp = []
         i = 0
-        while i < len(sentence):
-            max_len = 0
-            best_token = None
-            # Try to match the longest token starting from the current position
-            for j in range(i + 1, len(sentence) + 1):
-                subword = sentence[i:j]
-                if subword in self.vocab:
-                    if len(subword) > max_len:
-                        max_len = len(subword)
-                        best_token = subword
-            if best_token:
-                tokens.append(best_token)
-                i += max_len
+        while i < len(s):
+            cur_mx = 0
+            cur_best = None
+            for j in range(i+1,len(s)+1):
+                u = s[i:j]
+                # wo segment test krna hai
+                if u in self.vocab:
+                    if len(u) > cur_mx:
+                        cur_mx = len(u)
+                        cur_best = u
+                    # hm try kete hai jo longest hai wo le 
+            if cur_best:
+                ans_dp.append(cur_best)
+                i += cur_mx
             else:
-                # If no token is found, move by one character
-                tokens.append(sentence[i])
+                ans_dp.append(s[i])
                 i += 1
-        return tokens
+        return ans_dp
+    def json_formatter(self,data):
+        # data maine json se load kr liya using ek module jispr code run hoga 
+        # print(data)
+        # print(type(data))
+        # data = data.split(" ")
+        final = {}
+        ans = []
+        for i in data:
+            q = self.tokenize(i['sentence'])
+            final['id'] = i['id']
+            final['tokens'] = q
+            ans.append(q)
+            print(final)
+        for i in ans:
+            print(i)
+            print()
+# def test():
+#     a = WordPieceTokenizer(100, 'Assignment1\corpus.txt')
+#     (a.read_karo_corpus())
+#     print(a.preprocess_data())
+#     # print("{}{}{}")
+#     print(a.construct_vocabulary())
 
 
+# test()
+# def test2():
+#     a = WordPieceTokenizer(2, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
+#     # a.load_vocab()  # Load vocabulary from file
+#     a.read_karo_corpus()
+#     a.construct_vocabulary()
+#     q = (a.tokenize("This is an example sentence for tokenization!"))
+#     print(q)
+#     # for i in a.vocab:
+#     #     print(i,a.vocab[i])
 
-def test():
-    a = WordPieceTokenizer(1000, 'Assignment1\corpus.txt')
-    print(a.read_karo_corpus())
-    print(a.preprocess_data())
-    print(a.construct_vocabulary())
-
-test()
-def test2():
-    a = WordPieceTokenizer(1000, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
-    a.load_vocab()  # Load vocabulary from file
-    print(a.tokenize("This is an example sentence for tokenization!"))
-
-test2()
+# test2()

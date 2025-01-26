@@ -49,6 +49,7 @@ class WordPieceTokenizer:
 
         while len(self.vocab) < self.vocab_size:
             # Find the most frequent subword pairs
+            print(len(self.vocab))
             pairs = {}
             for word, freq in self.word_freq.items():
                 subwords = []
@@ -123,6 +124,7 @@ def test():
     group_no = 123  # Replace with your group number
     tokenizer = WordPieceTokenizer(vocab_size=1000, corpus_file_path="corpus.txt")
     tokenizer.read_corpus()
+    print("JJ")
     tokenizer.preprocess_data()
     tokenizer.construct_vocabulary()
     tokenizer.write_vocabulary(group_no)

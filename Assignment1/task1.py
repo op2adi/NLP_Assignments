@@ -168,6 +168,10 @@ class WordPieceTokenizer:
         for i in ans:
             print(i)
             print()
+    def fit(self):
+        self.read_karo_corpus()
+        self.preprocess_data()
+        self.construct_vocabulary()
 # def test():
 #     a = WordPieceTokenizer(100, 'Assignment1\corpus.txt')
 #     (a.read_karo_corpus())

@@ -15,22 +15,20 @@ class Word2VecDataset(Dataset):
         self.unk = "<UNK>"
         self.pad = "<PAD>"
         self.sentences = []
-        self.token_to_index = {}  # Token-to-index mapping
-        self.idx_to_token = {}    # Index-to-token mapping
+        self.token_to_index = {}  # stores token to index mapping
+        self.idx_to_token = {}    # stores index to token mapping
         self.preprocess_data()
 
     def preprocess_data(self):
-        self.tokenizer.fit()  # Prepare vocabulary
+        self.tokenizer.fit()  # prepares the vocab
         self.vocab = self.tokenizer.vocab
         self.sentences = self.tokenizer.liness
 
-        # Reserve indices for special tokens
         self.token_to_index[self.unk] = 0
         self.token_to_index[self.pad] = 1
         self.idx_to_token[0] = self.unk
         self.idx_to_token[1] = self.pad
 
-        # Map vocabulary words to indices
         current_count = 2
         for ele in self.vocab:
             if ele not in self.token_to_index:
@@ -38,17 +36,17 @@ class Word2VecDataset(Dataset):
                 self.idx_to_token[current_count] = ele
                 current_count += 1
 
-        # Generate training data
+        # make the training data 
         for sentence in self.sentences:
-            words = sentence.split()
+            words = self.tokenizer.tokenize(sentence)
             for i in range(len(words)):
                 context = []
 
-                # Left context
+                # create the left context
                 for j in range(i - self.window_size, i):
                     context.append(words[j] if j >= 0 else self.pad)
 
-                # Right context
+                # create the right context 
                 for j in range(i + 1, i + 1 + self.window_size):
                     context.append(words[j] if j < len(words) else self.pad)
 
@@ -71,15 +69,15 @@ class Word2VecDataset(Dataset):
 
 
 class Word2VecModel(nn.Module):
-    def __init__(self, vocab_size, embedding_dim):
+    def __init__(self, vocab_size, embedding_dim, window_size):
         super(Word2VecModel, self).__init__()
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
-        self.linear = nn.Linear(embedding_dim, vocab_size, bias=False)
+        self.linear = nn.Linear(embedding_dim*window_size*2, vocab_size, bias=False) #input will be 2*window_size*(tensors)
 
     def forward(self, context):
-        embeds = self.embeddings(context)
-        avg_embeds = embeds.mean(dim=1)
-        logits = self.linear(avg_embeds)
+        embeds = self.embeddings(context)  # shape will be -  (batch_size,2*window_size, embedding_dim)
+        concat_embeds = embeds.view(embeds.shape[0], -1)  # shape to the (batch_size, 2*window_size*embedding_dim)
+        logits = self.linear(concat_embeds)
         return logits
 
 
@@ -89,7 +87,7 @@ def train(model, epochs, training_data, learning_rate, batch_size=32):
     train_losses = []
     val_losses = []
 
-    # Split dataset into training and validation sets
+    #split the training and the validation dataset into 80 : 20 ration 
     split = int(0.8 * len(training_data))
     train_data, val_data = torch.utils.data.random_split(training_data, [split, len(training_data) - split])
 
@@ -133,8 +131,7 @@ def train(model, epochs, training_data, learning_rate, batch_size=32):
     plt.legend()
     plt.savefig("loss_plot.png")
     plt.show()
-
-    # Save model
+    #saving the model 
     torch.save(model.state_dict(), "word2vec_model.pth")
 
 
@@ -153,11 +150,11 @@ def cosine_similarities(model, dataset, word1, word2, word3):
     print(f"Similarity between '{word2}' and '{word3}': {sim3:.4f}")
 
 
-# Testing
-dataset1 = Word2VecDataset(2, './corpus.txt', 5002)  # Ensure vocab_size includes special tokens
-model1 = Word2VecModel(len(dataset1.token_to_index), 10)  # Use actual vocabulary size
+# testing code is here 
+dataset1 = Word2VecDataset(2, './corpus.txt', 5002) # vocab size would be 5002 = 5000  +  2, for two special tokens 
+model1 = Word2VecModel(len(dataset1.token_to_index), 10)  
 train(model1, 10, dataset1, 0.1, 32)
-
+cosine_similarities(model1, dataset1, "i", "feel", "so")
 
 
               

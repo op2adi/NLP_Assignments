@@ -44,10 +44,16 @@ class Word2VecDataset(Dataset):
 
                 # create the left context
                 for j in range(i - self.window_size, i):
+                    if(j>=0 and (words[j] not in self.vocab)):
+                        context.append(self.unk)
+                        continue
                     context.append(words[j] if j >= 0 else self.pad)
 
                 # create the right context 
                 for j in range(i + 1, i + 1 + self.window_size):
+                    if(j<len(words) and (words[j] not in self.vocab)):
+                        context.append(self.unk)
+                        continue
                     context.append(words[j] if j < len(words) else self.pad)
 
                 self.training_data.append((context, words[i]))
@@ -69,7 +75,7 @@ class Word2VecDataset(Dataset):
 
 
 class Word2VecModel(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, window_size):
+    def __init__(self, vocab_size, embedding_dim, window_size=2):
         super(Word2VecModel, self).__init__()
         self.embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.linear = nn.Linear(embedding_dim*window_size*2, vocab_size, bias=False) #input will be 2*window_size*(tensors)
@@ -78,8 +84,7 @@ class Word2VecModel(nn.Module):
         embeds = self.embeddings(context)  # shape will be -  (batch_size,2*window_size, embedding_dim)
         concat_embeds = embeds.view(embeds.shape[0], -1)  # shape to the (batch_size, 2*window_size*embedding_dim)
         logits = self.linear(concat_embeds)
-        return logits
-
+        return torch.log_softmax(logits, dim=1)  
 
 def train(model, epochs, training_data, learning_rate, batch_size=32):
     criterion = nn.CrossEntropyLoss()
@@ -151,10 +156,10 @@ def cosine_similarities(model, dataset, word1, word2, word3):
 
 
 # testing code is here 
-dataset1 = Word2VecDataset(2, './corpus.txt', 5002) # vocab size would be 5002 = 5000  +  2, for two special tokens 
-model1 = Word2VecModel(len(dataset1.token_to_index), 10)  
-train(model1, 10, dataset1, 0.1, 32)
-cosine_similarities(model1, dataset1, "i", "feel", "so")
+#dataset1 = Word2VecDataset(2, './corpus.txt', 5002) # vocab size would be 5002 = 5000  +  2, for two special tokens 
+#model1 = Word2VecModel(len(dataset1.token_to_index), 10,2)  
+#train(model1, 10, dataset1, 0.01, 32)
+#cosine_similarities(model1, dataset1, "i", "feel", "so")
 
 
               

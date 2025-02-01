@@ -13,6 +13,8 @@ class WordPieceTokenizer:
         self.vocab = {}
         self.liness = []
         self.corpus = defaultdict(int)
+        self.unk="<UNK>" #used as a token for something which is not there currently 
+        self.pad="<PAD>"
 
     def read_karo_corpus(self):
         with open(self.corpus_file_ka_path) as f:
@@ -149,7 +151,7 @@ class WordPieceTokenizer:
                 ans_dp.append(cur_best)
                 i += cur_mx
             else:
-                ans_dp.append(s[i])
+                ans_dp.append(self.unk) # appending the unknown token if no matching token found 
                 i += 1
         return ans_dp
     def json_formatter(self,data):

@@ -12,8 +12,8 @@ class Word2VecDataset(Dataset):
         self.window_size = window_size
         self.tokenizer = WordPieceTokenizer(vocab_size, file_path_corpus)
         self.training_data = []
-        self.unk = "<UNK>"
-        self.pad = "<PAD>"
+        self.unk = "[UNK]"
+        self.pad = "[PAD]"
         self.sentences = []
         self.token_to_index = {}  # stores token to index mapping
         self.idx_to_token = {}    # stores index to token mapping
@@ -23,15 +23,8 @@ class Word2VecDataset(Dataset):
         self.tokenizer.fit()  # prepares the vocab
         self.vocab = self.tokenizer.vocab
         self.sentences = self.tokenizer.liness
-
-        self.token_to_index[self.unk] = 0
-        self.token_to_index[self.pad] = 1
-        self.idx_to_token[0] = self.unk
-        self.idx_to_token[1] = self.pad
-
-        current_count = 2
+        current_count = 0
         for ele in self.vocab:
-            if ele not in self.token_to_index:
                 self.token_to_index[ele] = current_count
                 self.idx_to_token[current_count] = ele
                 current_count += 1
@@ -44,16 +37,10 @@ class Word2VecDataset(Dataset):
 
                 # create the left context
                 for j in range(i - self.window_size, i):
-                    if(j>=0 and (words[j] not in self.vocab)):
-                        context.append(self.unk)
-                        continue
                     context.append(words[j] if j >= 0 else self.pad)
 
                 # create the right context 
                 for j in range(i + 1, i + 1 + self.window_size):
-                    if(j<len(words) and (words[j] not in self.vocab)):
-                        context.append(self.unk)
-                        continue
                     context.append(words[j] if j < len(words) else self.pad)
 
                 self.training_data.append((context, words[i]))
@@ -155,11 +142,12 @@ def cosine_similarities(model, dataset, word1, word2, word3):
     print(f"Similarity between '{word2}' and '{word3}': {sim3:.4f}")
 
 
-# testing code is here 
-#dataset1 = Word2VecDataset(2, './corpus.txt', 5002) # vocab size would be 5002 = 5000  +  2, for two special tokens 
-#model1 = Word2VecModel(len(dataset1.token_to_index), 10,2)  
+# testing code is here , comment it out before running task3
+#dataset1 = Word2VecDataset(2, './corpus.txt', 5000) 
+#model1 = Word2VecModel(len(dataset1.token_to_index), 100,2)  
 #train(model1, 10, dataset1, 0.01, 32)
-#cosine_similarities(model1, dataset1, "i", "feel", "so")
+#cosine_similarities(model1, dataset1, "young", "younger", "yesterday")
+#cosine_similarities(model1 , dataset1, "zombies", "zombie","zoom")
 
 
               

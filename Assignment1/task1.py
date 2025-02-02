@@ -5,160 +5,219 @@ from collections import Counter
 import os
 from collections import defaultdict
 import time
+from collections import defaultdict
+import re
+
 class WordPieceTokenizer:
-    def __init__(self, vocab_size, corpus_file_ka_path, vocab_file_path = None):
+    def __init__(self, vocab_size, corpus_file_ka_path, vocab_file_path=None):
         self.vocab_size = vocab_size
         self.corpus_file_ka_path = corpus_file_ka_path
         self.vocab_file_path = vocab_file_path
         self.vocab = {}
         self.liness = []
         self.corpus = defaultdict(int)
-        self.unk="<UNK>" #used as a token for something which is not there currently 
-        self.pad="<PAD>"
+        self.vocab["[PAD]"] = 0  # PAD as spl
+        self.vocab["[UNK]"] = 0  # UNK as spl
 
     def read_karo_corpus(self):
-        with open(self.corpus_file_ka_path) as f:
+        # self.corpus = defaultdict(int)
+        self.liness = []
+        with open(self.corpus_file_ka_path, encoding="utf-8") as f:
             for line in f:
                 self.liness.append(line.strip())
+        self.corpus.clear()
+        for i in self.liness:
+            for j in i.split():
+                j = re.sub(r'[^a-zA-Z0-9]', '', j)
+                if not(j.isalnum):
+                    continue
+                self.corpus[j] += 1
         return self.liness
 
     def preprocess_data(self):
-        # Process each line in corpus
-        for line in self.liness:
-            # Convert to lowercase and remove extra whitespace
-            line = line.lower().strip()
-            # Remove punctuation and special characters, keeping only letters and spaces
-            line = ''.join(char for char in line if char.isalnum() or char.isspace())
-            
-            words = line.split()
-            for word in words:
-                self.corpus[word] += 1
-    def get_score(self,pair,val):
+        self.corpus = defaultdict(int)
+        self.corpus.clear()
+        #print(self.corpus)
+        lines = self.read_karo_corpus()
+        #print(self.corpus)
+        # removed lower case krne ki glti 
+        # hugging face wale ne bhi nhi kiya tha
+        self.corpus2 = defaultdict(int)
+        for line in lines:
+            line = re.sub(r'\s+', ' ', line).strip()
+            line = re.sub(r'([,.])', r' \1 ', line)
+            tokens = line.split()
+            for token in tokens:
+                # Agar token punctuation hai ya single character, use as tuple
+                if len(token) == 1 or re.fullmatch(r'[,.]', token):
+                    token_tuple = (token,)
+                else:
+                    # First character as is, rest with ## pel do 
+                    # yhi glti thi 
+                    # commenting ki yaaad rhe 
+                    token_tuple = (token[0],) + tuple("##" + ch for ch in token[1:])
+                self.corpus2[token_tuple] += 1
+
+    def get_score(self, pair, pair_count,lopa):
         # 1 lagaya for non zero division 
         first, second = pair
-        score = val/(self.vocab.get(first, 1) * self.vocab.get(second, 1))
+        score = pair_count / (lopa.get(first)*lopa.get(second))
         return score
+
     def write_vocabulary(self, group_no):
-        with open(f"vocabulary_{group_no}.txt", "w") as f:
+        with open(f"vocabulary_{group_no}.txt", "w", encoding="utf-8") as f:
             for token in sorted(self.vocab.keys()):
                 f.write(token + "\n")
 
-    def update_corpus_spl(self,abhi_tk_best):
-        new = defaultdict(int)
-        # print(self.corpus)
-        # time.sleep(5)
-        for i,j in self.corpus.items():
-            if type(i) == tuple: 
-                continue
-            np_i = i.replace(abhi_tk_best[0]+abhi_tk_best[1][2::],abhi_tk_best[0]+abhi_tk_best[1][2::])
-            new[np_i] = j
-        # print(new)
-        return new
-
-
-    def construct_vocabulary(self):
-        # Initialize subword frequencies
-        ans_tmp = defaultdict(int)
-        for i,j in self.corpus.items():
-            # print(i,j)
-            if type(i) == tuple:
-                continue
-            for k in range(len(i)):
-                if k == 0:
-                    ans_tmp[i[k]] += j
+    def merge_pair_in_word(self, word, pair):
+        new_word = []
+        i = 0
+        while i < len(word):
+            if i < len(word) - 1 and word[i] == pair[0] and word[i+1] == pair[1]:
+                if i == 0:
+                    merged = word[i] + (word[i+1][2:] if word[i+1].startswith("##") else word[i+1])
                 else:
-                    ans_tmp["##" + i[k]] += j
-        for i,j in ans_tmp.items():
-            # if len(i) == 3:
-            #     print(i)
-            #     exit(0)
-            # print(i,j)
-            # tmp print check ke liye 
-            self.vocab[i] = j
-        # print(self.vocab)
+                    merged = "##" + (word[i][2:] if word[i].startswith("##") else word[i]) + (word[i+1][2:] if word[i+1].startswith("##") else word[i+1])
+                new_word.append(merged)
+                i += 2
+            else:
+                new_word.append(word[i])
+                i += 1
+        return tuple(new_word)
+    def merge_rish(self,pair,addd,f1,f2,spl_das):
+        # print(f1,f2)
+        # print(pair,addd)
+        # print("##"*10)
+        # print(spl_das
+        for i,j in self.corpus.items():
+            timo = spl_das[i].copy()
+            if len(timo) == 1:
+                continue
+            k = 0
+            while k < len(timo)-1:
+                if timo[k] == pair[0]  and timo[k+1] == pair[1]:
+                    gait = (pair[0]+pair[1][2::] if pair[1].startswith("##") else pair[0]+pair[1])
+                    timo = timo[:k]+ [gait] + timo[k+2:]
+                else:
+                    k += 1
+            spl_das[i] = timo
+        # print(spl_das)
+        return spl_das
+
+
+
+    # def scr_finder(self,)
+    def construct_vocabulary(self):
+        # self.preprocess_data()
+        # Initialize vocabulary with individual tokens from corpus
+        token_freq = defaultdict(int)
+        #print(self.corpus)
+        for word, freq in self.corpus.items():
+            for j in range(len(word)):
+                if j == 0:
+                    token_freq[word[j]] += freq
+                    self.vocab[word[j]] = 1
+                else:
+                    token_freq["##"+word[j]] += freq
+                    self.vocab["##"+word[j]] = 1  
+        spl_das = defaultdict(list)
+        for i in self.corpus:
+            for j in range(len(i)):
+                if j == 0:
+                    spl_das[i].append(i[j])
+                else:
+                    spl_das[i].append("##"+i[j])
+        f1,f2 = defaultdict(int),defaultdict(int)
+        for i,j in self.corpus.items():
+           # print(i,j)
+            stp = spl_das[i]
+            if len(stp) == 1:
+                f1[stp[0]] += j
+            else:
+                # print(stp)
+                for k in range(len(stp)-1):
+                    peakock = (stp[k],stp[k+1])
+                    f1[stp[k]] += j
+                    f2[peakock] += j
+                f1[stp[-1]] += j
+                # last char ko miss kiya tha to daalana padega nhi to back 
+        # print(f1)
+        ans_comp = defaultdict(int)
+        for i,j in f2.items():
+            score = self.get_score(i,j,f1)
+            # print(i,j,score)
+            ans_comp[i] = score
+        # self.vocab = {}
+        self.vocab["[PAD]"] = 0
+        self.vocab["[UNK]"] = 0
+        # for 
+        # print(len(self.vocab))
+        # exit(1)
         while len(self.vocab) < self.vocab_size:
-            # print(len(self.vocab)) # len same aa rhi issue hai
-            # hr baar ek new token add krna hai 
-            tmp = defaultdict(int)
+            # print(len(self.vocab))
+            # pairs = defaultdict(int)
+            f1,f2 = defaultdict(int),defaultdict(int)
             for i,j in self.corpus.items():
-                # print(type(i))
-                out_words =[]
-                start_old = 0
-                while start_old < len(i):
-                    for new_tmp in range(len(i),start_old,-1):
-                        # print(i[start_old:new_tmp])
-                        tmp2 = i[start_old:new_tmp]
-                        # original initializa krke rkha hai 
-                        if start_old != 0:
-                            tmp2 = "##"+i[start_old:new_tmp]
-                        if tmp2 in self.vocab:
-                            out_words.append(tmp2)
-                            start_old = new_tmp-1
-                            break
-                    start_old += 1  
-                for k in range(len(out_words)-1):
-                    tmp[(out_words[k],out_words[k+1])] += j
-                # if 
-            # print(tmp)
-            final_dp = {} # to hold the aakhri score on which  comparisons krenge 
-            for utk,arp in tmp.items():
-                score = self.get_score(utk,arp)
-                # print(score)
-                final_dp[utk] = score
-            for i,j in self.corpus.items():
-                if type(i) == tuple:
-                    continue
-            abhi_tk_best = max(final_dp,key = lambda x:final_dp[x],default = None)
-            # print(abhi_tk_best,"KLKLL")
-            if abhi_tk_best is None:
-                # not possible iska mtlb corpus se bda vocab size manga hai 
-                break
-            if "##" not in abhi_tk_best[1]:
-                abhi_tk_best[1] = "##" + abhi_tk_best[1]
-            self.vocab[abhi_tk_best[0]+abhi_tk_best[1][2::]] = tmp[abhi_tk_best]
-
-            # ab corpus ko update krna hai
-            qp = self.update_corpus_spl(abhi_tk_best)
-            # print(qp)
-            self.corpus = qp.copy()
-        self.write_vocabulary(5)
-        return self.vocab
-
+                stp = spl_das[i]
+                if len(stp) == 1:
+                    f1[stp[0]] += j
+                else:
+                    for k in range(len(stp)-1):
+                        peakock = (stp[k],stp[k+1])
+                        f1[stp[k]] += j
+                        f2[peakock] += j
+                    f1[stp[-1]] += j
+                    # last char ko miss kiya tha to daalana padega nhi to back 
+            ans_comp = defaultdict(int)
+            for i,j in f2.items():
+                score = self.get_score(i,j,f1)
+                # print(i,j,score)
+                ans_comp[i] = score
+            best_pair = max(ans_comp.keys(), key=lambda p: ans_comp[p])
+            addd = ans_comp[best_pair]
+            # print(best_pair,addd)
+            # exit(0)
+            spl_das = self.merge_rish(best_pair,addd,f1,f2,spl_das)
+            tmp_add = ""
+            if best_pair[1].startswith("##"):
+                tmp_add = best_pair[0]+best_pair[1][2::]
+            else:
+                tmp_add = best_pair[0]+best_pair[1]
+            self.vocab[tmp_add]=1
     def load_vocab(self):
-        with open(self.vocab_file_path, 'r') as f:
+        with open(self.vocab_file_path, 'r', encoding="utf-8") as f:
             for line in f:
                 token = line.strip()
                 self.vocab[token] = 1  # We set frequency to 1 initially as we are only loading the vocabulary
 
-    def tokenize(self,s):
-        # test krne ke liye 
-        s = s.lower().strip()
-        s = ''.join(char for char in s if char.isalnum() or char.isspace()) # Assumption thi vocab me sirf letters,digits,spaces honge
+    def tokenize(self, s):
+        # test krne ke liye
+        s = s.strip()
+        s = re.sub(r'([,.])', r' \1 ', s)
+        s = re.sub(r'\s+', ' ', s)
+        # help from Tutorial jo thi
+        tokens = s.split()
         ans_dp = []
-        i = 0
-        while i < len(s):
-            cur_mx = 0
-            cur_best = None
-            for j in range(i+1,len(s)+1):
-                u = s[i:j]
-                # wo segment test krna hai
-                if u in self.vocab:
-                    if len(u) > cur_mx:
-                        cur_mx = len(u)
-                        cur_best = u
-                    # hm try kete hai jo longest hai wo le 
-            if cur_best:
-                ans_dp.append(cur_best)
-                i += cur_mx
+        for i in tokens:
+            start = []
+            while len(i) > 0:
+                ris = len(i)
+                while ris > 0 and i[:ris] not in self.vocab: # longest match krunga 
+                    # print(i[:ris])
+                    ris -= 1
+                #print(i[:ris] in self.vocab,i[:ris],self.vocab)
+                if ris == 0:
+                    ans_dp.append("[UNK]")
+                    break
+                start.append(i[:ris])
+                i = i[ris::]
+                if len(i) > 0:
+                    i = "##"+i
             else:
-                ans_dp.append(self.unk) # appending the unknown token if no matching token found 
-                i += 1
+                ans_dp.extend(start)
         return ans_dp
-    def json_formatter(self,data):
-        # data maine json se load kr liya using ek module jispr code run hoga 
-        # print(data)
-        # print(type(data))
-        # data = data.split(" ")
+
+    def json_formatter(self, data):
         final = {}
         ans = []
         for i in data:
@@ -170,19 +229,26 @@ class WordPieceTokenizer:
         for i in ans:
             print(i)
             print()
+
     def fit(self):
         self.read_karo_corpus()
         self.preprocess_data()
         self.construct_vocabulary()
-# def test():
-#     a = WordPieceTokenizer(100, 'Assignment1\corpus.txt')
-#     (a.read_karo_corpus())
-#     print(a.preprocess_data())
-#     # print("{}{}{}")
-#     print(a.construct_vocabulary())
+#def test():
+    #a = WordPieceTokenizer(70,r'corpus.txt')
+    #(a.read_karo_corpus())
+    # print(a.corpus)
+    #(a.preprocess_data())
+    # print(a.corpus)
+    # print("{}{}{}")
+    #q = (a.construct_vocabulary())
+    # print(a.tokenize("Hugging HOgging"))
+    # print(sorted(q,key=len))
 
 
-# test()
+
+#test()
+
 # def test2():
 #     a = WordPieceTokenizer(2, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
 #     # a.load_vocab()  # Load vocabulary from file

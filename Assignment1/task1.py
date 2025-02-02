@@ -196,14 +196,18 @@ class WordPieceTokenizer:
         ans_dp = []
         for i in tokens:
             start = []
+            # print(i)
+            fck = 0
             while len(i) > 0:
                 ris = len(i)
                 while ris > 0 and i[:ris] not in self.vocab: # longest match krunga 
-                    # print(i[:ris])
+                    # print(i[:ris],i[:ris] in self.vocab)
                     ris -= 1
+                # print(ris)
                 #print(i[:ris] in self.vocab,i[:ris],self.vocab)
                 if ris == 0:
                     ans_dp.append("[UNK]")
+                    fck = 1
                     break
                 start.append(i[:ris])
                 i = i[ris::]
@@ -211,6 +215,9 @@ class WordPieceTokenizer:
                     i = "##"+i
             else:
                 ans_dp.extend(start)
+            # if fck == 1:
+            #     if len(start) > 0:
+            #         ans_dp.extend(start)
         return ans_dp
 
 
@@ -231,23 +238,29 @@ class WordPieceTokenizer:
         self.read_karo_corpus()
         self.preprocess_data()
         self.construct_vocabulary()
+# def test():
+#     a = WordPieceTokenizer(1000,r'corpus.txt')
+#     (a.read_karo_corpus())
+#     # print(a.corpus)
+#     (a.preprocess_data())
+#     # print(a.corpus)
+#     # print("{}{}{}")
+#     q = (a.construct_vocabulary())
+#     print(a.tokenize("i mA x7 boy"))
+#     # print(sorted(q,key=len))
 
-def test():
-    a = WordPieceTokenizer(70,r'corpus.txt')
-    (a.read_karo_corpus())
-    # print(a.corpus)
-    (a.preprocess_data())
-    # print(a.corpus)
-    (a.construct_vocabulary())
-    # print(a.vocab)
 
-    print(a.tokenize("Hugging HOgging"))
-    # print(a.json_formatter())
 
-    with open("sample_test.json") as f:
-        data = json.load(f)
+# test()
 
-    a.json_formatter(data, 5)
+# def test2():
+#     a = WordPieceTokenizer(2, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
+#     # a.load_vocab()  # Load vocabulary from file
+#     a.read_karo_corpus()
+#     a.construct_vocabulary()
+#     q = (a.tokenize("This is an example sentence for tokenization!"))
+#     print(q)
+#     # for i in a.vocab:
+#     #     print(i,a.vocab[i])
 
-if __name__ == "__main__":
-    test()
+# test2()

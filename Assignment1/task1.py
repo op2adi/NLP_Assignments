@@ -169,7 +169,10 @@ class WordPieceTokenizer:
                 score = self.get_score(i,j,f1)
                 # print(i,j,score)
                 ans_comp[i] = score
-            best_pair = max(ans_comp.keys(), key=lambda p: ans_comp[p])
+            try:
+                best_pair = max(ans_comp.keys(), key=lambda p: ans_comp[p])
+            except:
+                raise ValueError("Vocabulary size is too large. Cannot find any more pairs.")
             addd = ans_comp[best_pair]
             # print(best_pair,addd)
             # exit(0)
@@ -264,3 +267,40 @@ class WordPieceTokenizer:
 #     #     print(i,a.vocab[i])
 
 # test2()
+
+
+
+
+def test():
+    a = WordPieceTokenizer(1000,r'corpus.txt')
+    (a.read_karo_corpus())
+    # print(a.corpus)
+    (a.preprocess_data())
+    # print(a.corpus)
+    (a.construct_vocabulary())
+    # print(a.vocab)
+
+    print(a.tokenize("Hugging HOgging"))
+    # print(a.json_formatter())
+
+    with open("sample_test.json") as f:
+        data = json.load(f)
+
+    a.json_formatter(data, 5)
+
+if __name__ == "__main__":
+    test()
+
+
+    def json_formatter(self, data, group_no:int):
+        final_output = {}
+
+        for item in data:
+            tokens = self.tokenize(item['sentence'])
+            final_output[item['id']] = tokens
+
+        with open(f'tokenized_{group_no}.json', 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, indent=4)
+
+        print(f"Tokenized data saved to tokenized_{group_no}.json")
+

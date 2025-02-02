@@ -141,21 +141,13 @@ def cosine_similarities(model, dataset, word1, word2, word3):
     print(f"Similarity between '{word1}' and '{word3}': {sim2:.4f}")
     print(f"Similarity between '{word2}' and '{word3}': {sim3:.4f}")
 
+def test():
+    # testing code is here , comment it out before running task3
+    dataset1 = Word2VecDataset(2, './corpus.txt', 5000) 
+    model1 = Word2VecModel(len(dataset1.token_to_index), 100,2)  
+    train(model1, 10, dataset1, 0.01, 32)
+    cosine_similarities(model1, dataset1, "young", "younger", "yesterday")
+    cosine_similarities(model1 , dataset1, "zombies", "zombie","zoom")
 
-# testing code is here , comment it out before running task3
-#dataset1 = Word2VecDataset(2, './corpus.txt', 5000) 
-#model1 = Word2VecModel(len(dataset1.token_to_index), 100,2)  
-#train(model1, 10, dataset1, 0.01, 32)
-#cosine_similarities(model1, dataset1, "young", "younger", "yesterday")
-#cosine_similarities(model1 , dataset1, "zombies", "zombie","zoom")
-
-
-              
-
-
-              
-              
-              
-            
-     
-
+if __name__ == "__main__":
+    test()

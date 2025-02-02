@@ -1,10 +1,6 @@
 # Jai Mata Di
-import numpy as np
-import pandas as pd
-from collections import Counter
-import os
 from collections import defaultdict
-import time
+import json
 from collections import defaultdict
 import re
 
@@ -217,46 +213,41 @@ class WordPieceTokenizer:
                 ans_dp.extend(start)
         return ans_dp
 
-    def json_formatter(self, data):
-        final = {}
-        ans = []
-        for i in data:
-            q = self.tokenize(i['sentence'])
-            final['id'] = i['id']
-            final['tokens'] = q
-            ans.append(q)
-            print(final)
-        for i in ans:
-            print(i)
-            print()
+
+    def json_formatter(self, data, group_no:int):
+        final_output = {}
+
+        for item in data:
+            tokens = self.tokenize(item['sentence'])
+            final_output[item['id']] = tokens
+
+        with open(f'tokenized_{group_no}.json', 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, indent=4)
+
+        print(f"Tokenized data saved to tokenized_{group_no}.json")
+
 
     def fit(self):
         self.read_karo_corpus()
         self.preprocess_data()
         self.construct_vocabulary()
-#def test():
-    #a = WordPieceTokenizer(70,r'corpus.txt')
-    #(a.read_karo_corpus())
+
+def test():
+    a = WordPieceTokenizer(70,r'corpus.txt')
+    (a.read_karo_corpus())
     # print(a.corpus)
-    #(a.preprocess_data())
+    (a.preprocess_data())
     # print(a.corpus)
-    # print("{}{}{}")
-    #q = (a.construct_vocabulary())
-    # print(a.tokenize("Hugging HOgging"))
-    # print(sorted(q,key=len))
+    (a.construct_vocabulary())
+    # print(a.vocab)
 
+    print(a.tokenize("Hugging HOgging"))
+    # print(a.json_formatter())
 
+    with open("sample_test.json") as f:
+        data = json.load(f)
 
-#test()
+    a.json_formatter(data, 5)
 
-# def test2():
-#     a = WordPieceTokenizer(2, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
-#     # a.load_vocab()  # Load vocabulary from file
-#     a.read_karo_corpus()
-#     a.construct_vocabulary()
-#     q = (a.tokenize("This is an example sentence for tokenization!"))
-#     print(q)
-#     # for i in a.vocab:
-#     #     print(i,a.vocab[i])
-
-# test2()
+if __name__ == "__main__":
+    test()

@@ -11,7 +11,7 @@ class NeuralLMDataset(Dataset):
     def __init__(self, corpus_path,vocab_size, context_size=3):
         self.context_size = context_size
         self.word2vec_model = Word2VecModel(vocab_size, 100,2)  # Ensure correct model parameters
-        self.word2vec_model.load_state_dict(torch.load("word2vec_model.pth"))
+        self.word2vec_model.load_state_dict(torch.load("word2vec_model_dummy.pth"))
         self.word2vec_model.eval()  # Set to evaluation mode
         self.tokenizer = WordPieceTokenizer(vocab_size, corpus_path)
         self.tokenizer.fit()
@@ -222,7 +222,7 @@ state_dict = torch.load("word2vec_model.pth")
 # Print all parameter names and their corresponding shapes
 for key, value in state_dict.items():
     print(f"Parameter: {key}, Shape: {value.shape}")
-dataset = NeuralLMDataset("./corpus.txt",5000, context_size=3)
+dataset = NeuralLMDataset("./corpus.txt",14420, context_size=3)
 vocab_size = len(dataset.token_to_index)
 split = int(0.8 * len(dataset))
 print("data set created ")
@@ -232,25 +232,25 @@ val_loader= DataLoader(val_data, batch_size=32, shuffle=True)
 
 hidden_dim = 128
 print("model creating now..")
-model = NeuralLM1(5000,100, hidden_dim,3, dataset.embeddings)
+model = NeuralLM1(14420,200, hidden_dim,3, dataset.embeddings)
 print("model 1 created ")
-train1(model, train_data, val_data, epochs=10, learning_rate=0.01, batch_size=32)
+train1(model, train_data, val_data, epochs=10, learning_rate=0.01, batch_size=64)
 print("Train accuracy for model 1 is", compute_accuracy(model, train_loader))
 print("Validation accuracy for model 1 is", compute_accuracy(model, val_loader))
 print("Train perplexity score for model 1  is", compute_perplexity(model, train_loader))
 print("Val perplexity score for model 1 is", compute_perplexity(model, val_loader))
 model_2 = NeuralLM2(5000,100,hidden_dim, 3, dataset.embeddings)
-train1(model_2, train_data, val_data, epochs= 10, learning_rate=0.01, batch_size=32)
-print("Train accuracy for model 2 is", compute_accuracy(model, train_loader))
-print("Validation accuracy for model 2 is", compute_accuracy(model, val_loader))
-print("Train perplexity score for model 2 is", compute_perplexity(model, train_loader))
-print("Val perplexity score for model 2 is", compute_perplexity(model, val_loader))
+train1(model_2, train_data, val_data, epochs= 10, learning_rate=0.01, batch_size=64)
+print("Train accuracy for model 2 is", compute_accuracy(model_2, train_loader))
+print("Validation accuracy for model 2 is", compute_accuracy(model_2, val_loader))
+print("Train perplexity score for model 2 is", compute_perplexity(model_2, train_loader))
+print("Val perplexity score for model 2 is", compute_perplexity(model_2, val_loader))
 model_3 = NeuralLM3(5000,100, hidden_dim, 3, dataset.embeddings)
-train1(model_3, train_data, val_data, epochs=10, learning_rate=0.01, batch_size=32)
-print("Train accuracy for model 3 is", compute_accuracy(model, train_loader))
-print("Validation accuracy for model 3 is", compute_accuracy(model, val_loader))
-print("Train perplexity score for model 3 is", compute_perplexity(model, train_loader))
-print("Val perplexity score for model 3 is", compute_perplexity(model, val_loader))
+train1(model_3, train_data, val_data, epochs=10, learning_rate=0.01, batch_size=64)
+print("Train accuracy for model 3 is", compute_accuracy(model_3, train_loader))
+print("Validation accuracy for model 3 is", compute_accuracy(model_3, val_loader))
+print("Train perplexity score for model 3 is", compute_perplexity(model_3, train_loader))
+print("Val perplexity score for model 3 is", compute_perplexity(model_3, val_loader))
 #use the best model to predict the next tokens
 model_for_predictions= model
 if compute_accuracy(model_2, val_loader) > compute_accuracy(model_for_predictions, val_loader):
@@ -259,4 +259,4 @@ if compute_accuracy(model_3, val_loader) > compute_accuracy(model_for_prediction
     model_for_predictions = model_3
 
 print("Using the best model for predictions")
-predict_next_tokens(model, dataset, "sample_test.txt")
+predict_next_tokens(model_for_predictions, dataset, "sample_test.txt")

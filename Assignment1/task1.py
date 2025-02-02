@@ -149,6 +149,7 @@ class WordPieceTokenizer:
         # for 
         # print(len(self.vocab))
         # exit(1)
+        ct = 0
         while len(self.vocab) < self.vocab_size:
             # print(len(self.vocab))
             # pairs = defaultdict(int)
@@ -174,7 +175,9 @@ class WordPieceTokenizer:
             except:
                 raise ValueError("Vocabulary size is too large. Cannot find any more pairs.")
             addd = ans_comp[best_pair]
-            # print(best_pair,addd)
+            if ct < 3:
+                print(best_pair,addd)
+                ct+=1
             # exit(0)
             spl_das = self.merge_rish(best_pair,addd,f1,f2,spl_das)
             tmp_add = ""
@@ -191,6 +194,7 @@ class WordPieceTokenizer:
 
     def tokenize(self, s):
         # test krne ke liye
+        s = s.lower()
         s = s.strip()
         s = re.sub(r'([,.])', r' \1 ', s)
         s = re.sub(r'\s+', ' ', s)

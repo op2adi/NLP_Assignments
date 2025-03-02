@@ -143,10 +143,10 @@ def cosine_similarities(model, dataset, word1, word2, word3):
 
 def test():
     # testing code is here , comment it out before running task3
-    dataset1 = Word2VecDataset(2, './corpus.txt', 5000) 
+    dataset1 = Word2VecDataset(2, './corpus.txt', 4937) 
     model1 = Word2VecModel(len(dataset1.token_to_index), 100,2)  
     train(model1, 10, dataset1, 0.01, 32)
-    cosine_similarities(model1, dataset1, "young", "younger", "yesterday")
+    cosine_similarities(model1, dataset1, "king", "queen", "women")
     cosine_similarities(model1 , dataset1, "zombies", "zombie","zoom")
 
 if __name__ == "__main__":

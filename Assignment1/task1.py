@@ -276,16 +276,17 @@ class WordPieceTokenizer:
 
 
 def test():
-    a = WordPieceTokenizer(1000,r'corpus.txt')
+    a = WordPieceTokenizer(13000,r'corpus.txt')
     (a.read_karo_corpus())
     # print(a.corpus)
     (a.preprocess_data())
     # print(a.corpus)
     (a.construct_vocabulary())
+    a.write_vocabulary(5)
     # print(a.vocab)
 
-    print(a.tokenize("Hugging HOgging"))
-    # print(a.json_formatter())
+    # print(a.tokenize("Hugging HOgging"))
+    # # print(a.json_formatter())
 
     with open("sample_test.json") as f:
         data = json.load(f)
@@ -307,4 +308,4 @@ if __name__ == "__main__":
             json.dump(final_output, f, ensure_ascii=False, indent=4)
 
         print(f"Tokenized data saved to tokenized_{group_no}.json")
-
+    # json_formatter()

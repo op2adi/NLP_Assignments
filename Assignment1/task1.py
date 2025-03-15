@@ -1,10 +1,6 @@
 # Jai Mata Di
-import numpy as np
-import pandas as pd
-from collections import Counter
-import os
 from collections import defaultdict
-import time
+import json
 from collections import defaultdict
 import re
 
@@ -153,6 +149,7 @@ class WordPieceTokenizer:
         # for 
         # print(len(self.vocab))
         # exit(1)
+        ct = 0
         while len(self.vocab) < self.vocab_size:
             # print(len(self.vocab))
             # pairs = defaultdict(int)
@@ -173,9 +170,14 @@ class WordPieceTokenizer:
                 score = self.get_score(i,j,f1)
                 # print(i,j,score)
                 ans_comp[i] = score
-            best_pair = max(ans_comp.keys(), key=lambda p: ans_comp[p])
+            try:
+                best_pair = max(ans_comp.keys(), key=lambda p: ans_comp[p])
+            except:
+                raise ValueError("Vocabulary size is too large. Cannot find any more pairs.")
             addd = ans_comp[best_pair]
-            # print(best_pair,addd)
+            if ct < 3:
+                print(best_pair,addd)
+                ct+=1
             # exit(0)
             spl_das = self.merge_rish(best_pair,addd,f1,f2,spl_das)
             tmp_add = ""
@@ -192,6 +194,7 @@ class WordPieceTokenizer:
 
     def tokenize(self, s):
         # test krne ke liye
+        s = s.lower()
         s = s.strip()
         s = re.sub(r'([,.])', r' \1 ', s)
         s = re.sub(r'\s+', ' ', s)
@@ -200,14 +203,18 @@ class WordPieceTokenizer:
         ans_dp = []
         for i in tokens:
             start = []
+            # print(i)
+            fck = 0
             while len(i) > 0:
                 ris = len(i)
                 while ris > 0 and i[:ris] not in self.vocab: # longest match krunga 
-                    # print(i[:ris])
+                    # print(i[:ris],i[:ris] in self.vocab)
                     ris -= 1
+                # print(ris)
                 #print(i[:ris] in self.vocab,i[:ris],self.vocab)
                 if ris == 0:
                     ans_dp.append("[UNK]")
+                    fck = 1
                     break
                 start.append(i[:ris])
                 i = i[ris::]
@@ -215,40 +222,43 @@ class WordPieceTokenizer:
                     i = "##"+i
             else:
                 ans_dp.extend(start)
+            # if fck == 1:
+            #     if len(start) > 0:
+            #         ans_dp.extend(start)
         return ans_dp
 
-    def json_formatter(self, data):
-        final = {}
-        ans = []
-        for i in data:
-            q = self.tokenize(i['sentence'])
-            final['id'] = i['id']
-            final['tokens'] = q
-            ans.append(q)
-            print(final)
-        for i in ans:
-            print(i)
-            print()
+
+    def json_formatter(self, data, group_no:int):
+        final_output = {}
+
+        for item in data:
+            tokens = self.tokenize(item['sentence'])
+            final_output[item['id']] = tokens
+
+        with open(f'tokenized_{group_no}.json', 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, indent=4)
+
+        print(f"Tokenized data saved to tokenized_{group_no}.json")
+
 
     def fit(self):
         self.read_karo_corpus()
         self.preprocess_data()
         self.construct_vocabulary()
-        self.write_vocabulary(5)
-#def test():
-    #a = WordPieceTokenizer(70,r'corpus.txt')
-    #(a.read_karo_corpus())
-    # print(a.corpus)
-    #(a.preprocess_data())
-    # print(a.corpus)
-    # print("{}{}{}")
-    #q = (a.construct_vocabulary())
-    # print(a.tokenize("Hugging HOgging"))
-    # print(sorted(q,key=len))
+# def test():
+#     a = WordPieceTokenizer(1000,r'corpus.txt')
+#     (a.read_karo_corpus())
+#     # print(a.corpus)
+#     (a.preprocess_data())
+#     # print(a.corpus)
+#     # print("{}{}{}")
+#     q = (a.construct_vocabulary())
+#     print(a.tokenize("i mA x7 boy"))
+#     # print(sorted(q,key=len))
 
 
 
-#test()
+# test()
 
 # def test2():
 #     a = WordPieceTokenizer(2, 'Assignment1\corpus.txt', 'vocabulary_5.txt')
@@ -261,5 +271,41 @@ class WordPieceTokenizer:
 #     #     print(i,a.vocab[i])
 
 # test2()
-#a=WordPieceTokenizer(14420,'corpus.txt')
-#a.fit()
+
+
+
+
+def test():
+    a = WordPieceTokenizer(13000,r'corpus.txt')
+    (a.read_karo_corpus())
+    # print(a.corpus)
+    (a.preprocess_data())
+    # print(a.corpus)
+    (a.construct_vocabulary())
+    a.write_vocabulary(5)
+    # print(a.vocab)
+
+    # print(a.tokenize("Hugging HOgging"))
+    # # print(a.json_formatter())
+
+    with open("sample_test.json") as f:
+        data = json.load(f)
+
+    a.json_formatter(data, 5)
+
+if __name__ == "__main__":
+    test()
+
+
+    def json_formatter(self, data, group_no:int):
+        final_output = {}
+
+        for item in data:
+            tokens = self.tokenize(item['sentence'])
+            final_output[item['id']] = tokens
+
+        with open(f'tokenized_{group_no}.json', 'w', encoding='utf-8') as f:
+            json.dump(final_output, f, ensure_ascii=False, indent=4)
+
+        print(f"Tokenized data saved to tokenized_{group_no}.json")
+    # json_formatter()

@@ -234,6 +234,7 @@ class WordPieceTokenizer:
         self.read_karo_corpus()
         self.preprocess_data()
         self.construct_vocabulary()
+        self.write_vocabulary(5)
 #def test():
     #a = WordPieceTokenizer(70,r'corpus.txt')
     #(a.read_karo_corpus())
@@ -260,3 +261,5 @@ class WordPieceTokenizer:
 #     #     print(i,a.vocab[i])
 
 # test2()
+#a=WordPieceTokenizer(14420,'corpus.txt')
+#a.fit()

@@ -121,10 +121,10 @@ def train(model, epochs, training_data, learning_rate, batch_size=32):
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig("loss_plot.png")
+    plt.savefig("loss_plot_dummy.png")
     plt.show()
     #saving the model 
-    torch.save(model.state_dict(), "word2vec_model.pth")
+    torch.save(model.state_dict(), "word2vec_model_dummy.pth")
 
 
 def cosine_similarities(model, dataset, word1, word2, word3):
@@ -142,7 +142,7 @@ def cosine_similarities(model, dataset, word1, word2, word3):
     print(f"Similarity between '{word2}' and '{word3}': {sim3:.4f}")
 
 
-# testing code is here , comment it out before running task3
+# testing code is here , comment it out before running task3#
 #dataset1 = Word2VecDataset(2, './corpus.txt', 5000) 
 #model1 = Word2VecModel(len(dataset1.token_to_index), 100,2)  
 #train(model1, 10, dataset1, 0.01, 32)

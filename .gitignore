@@ -1,0 +1,9 @@
+.qodo
+Assignment2/best_model_gru_fasttext.keras
+Assignment2/best_model_gru_glove.keras
+Assignment2/best_model_rnn_fasttext.keras
+Assignment2/best_model_rnn_glove.keras
+Assignment2/glove.6B.300d.txt
+Assignment2/wiki-news-300d-1M.vec
+Assignment1/word2vec_model.pth
+.cph

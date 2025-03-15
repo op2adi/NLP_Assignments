@@ -11,7 +11,7 @@ class NeuralLMDataset(Dataset):
     def __init__(self, corpus_path,vocab_size, context_size=3):
         self.context_size = context_size
         self.word2vec_model = Word2VecModel(vocab_size, 100,2)  # Ensure correct model parameters
-        self.word2vec_model.load_state_dict(torch.load("word2vec_model.pth"))
+        self.word2vec_model.load_state_dict(torch.load("word2vec_model_dummy.pth"))
         self.word2vec_model.eval()  # Set to evaluation mode
         self.tokenizer = WordPieceTokenizer(vocab_size, corpus_path)
         self.tokenizer.fit()
@@ -20,8 +20,8 @@ class NeuralLMDataset(Dataset):
         self.pad = "[PAD]"
         self.sentences = self.tokenizer.liness
         self.embeddings = self.word2vec_model.embeddings.weight.detach()
-        self.token_to_index = {}
-        self.index_to_token = {}
+        self.token_to_index = {} # stores token to index mapping
+        self.index_to_token = {} # stores index to token mapping 
         count = 0
         for token in self.vocab:
             self.token_to_index[token]=count
@@ -54,14 +54,14 @@ class NeuralLMDataset(Dataset):
                 sentence = [self.pad] * (self.context_size + 1 - len(sentence)) + sentence
             
             for i in range(len(sentence) - self.context_size):
-                context = sentence[i:i + self.context_size]
+                context = sentence[i:i + self.context_size] #retrieve the context
                 target = sentence[i + self.context_size]
                 self.data.append((context, target))
 
-
-class NeuralLM1(nn.Module):
+# a simple baseline model to be used for comparision with other models
+class NeuralLM2(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, context_size, pretrained_embeddings):
-        super(NeuralLM1, self).__init__()
+        super(NeuralLM2, self).__init__()
         self.embedding = nn.Embedding.from_pretrained(pretrained_embeddings, freeze=True)
         self.fc1 = nn.Linear(embedding_dim * context_size, hidden_dim)
         self.relu = nn.ReLU()
@@ -73,38 +73,86 @@ class NeuralLM1(nn.Module):
         out = self.fc2(hidden)
         return out
     
-class NeuralLM2(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, hidden_dim, context_size, pretrained_embeddings):
-        super(NeuralLM2, self).__init__()
+class NeuralLM1(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, context_size, pretrained_embeddings, dropout=0.3):
+        super(NeuralLM1, self).__init__()
+        
         self.embedding = nn.Embedding.from_pretrained(pretrained_embeddings, freeze=True)
+        
         self.fc1 = nn.Linear(embedding_dim * context_size, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.relu = nn.ReLU()
-        self.fc3 = nn.Linear(hidden_dim, vocab_size)
-    
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim // 2)  # Adding an extra layer
+        self.fc4 = nn.Linear(hidden_dim // 2, vocab_size)
+
+        self.leaky_relu = nn.LeakyReLU(negative_slope=0.01)
+        self.dropout = nn.Dropout(dropout)
+        self.batch_norm1 = nn.BatchNorm1d(hidden_dim)
+        self.batch_norm2 = nn.BatchNorm1d(hidden_dim // 2)
+
     def forward(self, x):
-        embeds = self.embedding(x).view(x.shape[0], -1)
-        hidden = self.relu(self.fc1(embeds))
-        hidden = self.relu(self.fc2(hidden))
-        out = self.fc3(hidden)
+        embeds = self.embedding(x).view(x.shape[0], -1)  # Flatten embeddings
+        
+        hidden = self.leaky_relu(self.fc1(embeds))
+        hidden = self.batch_norm1(hidden)
+        hidden = self.dropout(hidden)
+
+        hidden = self.leaky_relu(self.fc2(hidden))
+        hidden = self.dropout(hidden)
+
+        hidden = self.leaky_relu(self.fc3(hidden))
+        hidden = self.batch_norm2(hidden)
+        hidden = self.dropout(hidden)
+
+        out = self.fc4(hidden)  # Output layer
         return out
 
 class NeuralLM3(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_dim, context_size, pretrained_embeddings):
         super(NeuralLM3, self).__init__()
+        
+        # embediing layer 
         self.embedding = nn.Embedding.from_pretrained(pretrained_embeddings, freeze=True)
-        self.fc1 = nn.Linear(embedding_dim *context_size, hidden_dim)
+        
+        # first fully connected layer
+        self.fc1 = nn.Linear(embedding_dim * context_size, hidden_dim)
+        
+        # multi-head like mechanism 
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.tanh = nn.Tanh()
+        self.fc3 = nn.Linear(hidden_dim, hidden_dim)
+        
+        # add and normalize layers (like in transformer architectures)
+        self.add_norm1 = nn.LayerNorm(hidden_dim)
+        self.add_norm2 = nn.LayerNorm(hidden_dim)
+        
+        # final output layer
+        self.fc4 = nn.Linear(hidden_dim, vocab_size)
+        
+        # activation
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
-        self.fc3 = nn.Linear(hidden_dim, vocab_size)
     
     def forward(self, x):
-        embeds = self.embedding(x).view(x.shape[0], -1)
-        hidden = self.tanh(self.fc1(embeds))
-        hidden = self.dropout(self.tanh(self.fc2(hidden)))
-        out = self.fc3(hidden)
+      
+        embeds = self.embedding(x).view(x.shape[0], -1)  # Flatten embeddings
+        
+        # first fully connected layer with ReLU activation
+        hidden = self.relu(self.fc1(embeds))
+        
+        # simplified "Multi-head Attention" by passing through two additional fully connected layers
+        # Mimicking attention: Cross interactions with two fully connected layers (this can simulate the self-attention mechanism to some degree)
+        hidden2 = self.relu(self.fc2(hidden))
+        hidden2 = self.dropout(hidden2)
+        hidden2 = self.add_norm1(hidden + hidden2)  # skip connection + layer Normalization
+        
+        hidden3 = self.relu(self.fc3(hidden2))
+        hidden3 = self.dropout(hidden3)
+        hidden3 = self.add_norm2(hidden2 + hidden3)  # skip connection + layer Normalization
+        
+        #final output layer
+        out = self.fc4(hidden3)
+        
         return out
+
 
 
 def train1(model, train_data, val_data, epochs, learning_rate, batch_size=32):
@@ -170,7 +218,7 @@ def predict_next_tokens(model, dataset, test_file, num_predictions=3):
         predictions = model(context_indices)
         #print("one prediction successfull")
         output=[] # this is used to store the output 
-        top_tokens = torch.topk(predictions, num_predictions, dim=1).indices.squeeze(0).tolist()
+        top_tokens = torch.topk(predictions, num_predictions, dim=1).indices.squeeze(0).tolist() # get the token with the highest probablity 
         predicted_words = [dataset.index_to_token[idx] for idx in top_tokens]
         context.pop(0)
         context.append(predicted_words[0])
@@ -241,22 +289,22 @@ print("Train perplexity score for model 1  is", compute_perplexity(model, train_
 print("Val perplexity score for model 1 is", compute_perplexity(model, val_loader))
 model_2 = NeuralLM2(5000,100,hidden_dim, 3, dataset.embeddings)
 train1(model_2, train_data, val_data, epochs= 10, learning_rate=0.01, batch_size=32)
-print("Train accuracy for model 2 is", compute_accuracy(model, train_loader))
-print("Validation accuracy for model 2 is", compute_accuracy(model, val_loader))
-print("Train perplexity score for model 2 is", compute_perplexity(model, train_loader))
-print("Val perplexity score for model 2 is", compute_perplexity(model, val_loader))
+print("Train accuracy for model 2 is", compute_accuracy(model_2, train_loader))
+print("Validation accuracy for model 2 is", compute_accuracy(model_2, val_loader))
+print("Train perplexity score for model 2 is", compute_perplexity(model_2, train_loader))
+print("Val perplexity score for model 2 is", compute_perplexity(model_2, val_loader))
 model_3 = NeuralLM3(5000,100, hidden_dim, 3, dataset.embeddings)
 train1(model_3, train_data, val_data, epochs=10, learning_rate=0.01, batch_size=32)
-print("Train accuracy for model 3 is", compute_accuracy(model, train_loader))
-print("Validation accuracy for model 3 is", compute_accuracy(model, val_loader))
-print("Train perplexity score for model 3 is", compute_perplexity(model, train_loader))
-print("Val perplexity score for model 3 is", compute_perplexity(model, val_loader))
+print("Train accuracy for model 3 is", compute_accuracy(model_3, train_loader))
+print("Validation accuracy for model 3 is", compute_accuracy(model_3, val_loader))
+print("Train perplexity score for model 3 is", compute_perplexity(model_3, train_loader))
+print("Val perplexity score for model 3 is", compute_perplexity(model_3, val_loader))
 #use the best model to predict the next tokens
-model_for_predictions= model
+model_for_predictions= model_3
 if compute_accuracy(model_2, val_loader) > compute_accuracy(model_for_predictions, val_loader):
     model_for_predictions = model_2
-if compute_accuracy(model_3, val_loader) > compute_accuracy(model_for_predictions, val_loader):
-    model_for_predictions = model_3
+if compute_accuracy(model, val_loader) > compute_accuracy(model_for_predictions, val_loader):
+    model_for_predictions = model
 
 print("Using the best model for predictions")
-predict_next_tokens(model, dataset, "sample_test.txt")
+predict_next_tokens(model_for_predictions, dataset, "sample_test.txt")

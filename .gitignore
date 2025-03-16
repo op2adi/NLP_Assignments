@@ -1,4 +1,17 @@
-.qodo
+# Ignore model files from spanbert finetuning
+Assignment2/spanbert_squad_finetuned_ma_ki/model.safetensors
+Assignment2/spanbert_squad_finetuned_mak_ki/pytorch_model.bin
+Assignment2/spanbert_squad_finetuned_mak_ki/epoch_10/model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_mak_ki/epoch_9/model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_mak_ki/final_model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_mak_ki/model.safetensors
+Assignment2/spanbert_squad_finetuned_bio_large/final_model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_mak_ki/epoch_9/model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_mak_ki_HARSH/model.safetensors
+Assignment2/spanbert_squad_finetuned_bio_large/epoch_10/model_tokenizer.pkl
+Assignment2/spanbert_squad_finetuned_bio_large/epoch_9/model_tokenizer.pkl
+
+# Ignore RNN and GRU models
 Assignment2/best_model_gru_fasttext.keras
 Assignment2/best_model_gru_glove.keras
 Assignment2/best_model_rnn_fasttext.keras
@@ -6,4 +19,7 @@ Assignment2/best_model_rnn_glove.keras
 Assignment2/glove.6B.300d.txt
 Assignment2/wiki-news-300d-1M.vec
 Assignment1/word2vec_model.pth
+
+# Ignore other temporary or metadata files
+.qodo
 .cph

@@ -31,4 +31,20 @@ Assignemnt2/spanbert_squad_finetuned_mak_ki/epoch_10/model_tokenizer.pkl
 Assignemnt2/spanbert_squad_finetuned_mak_ki/epoch_9/model_tokenizer.pkl
 Assignemnt2/spanbert_squad_finetuned_mak_ki/final_model_tokenizer.pkl
 Assignemnt2/spanbert_squad_finetuned_mak_ki/model.safetensors
+<<<<<<< HEAD
 >>>>>>> b3e855d (task3 done by adi)
+=======
+Assignemnt2/spanbert_squad_finetuned_bio_large/final_model_tokenizer.pkl
+Assignemnt2/spanbert_squad_finetuned_mak_ki/epoch_9/model_tokenizer.pkl
+Assignemnt2/spanbert_squad_finetuned_mak_ki_HARSH/model.safetensors
+Assignemnt2/spanbert_squad_finetuned_bio_large/epoch_10/model_tokenizer.pkl
+.qodo
+Assignment2/best_model_gru_fasttext.keras
+Assignment2/best_model_gru_glove.keras
+Assignment2/best_model_rnn_fasttext.keras
+Assignment2/best_model_rnn_glove.keras
+Assignment2/glove.6B.300d.txt
+Assignment2/wiki-news-300d-1M.vec
+Assignment1/word2vec_model.pth
+.cph
+>>>>>>> 5723bb2 (hu)
